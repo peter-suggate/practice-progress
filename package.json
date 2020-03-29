@@ -1,0 +1,30 @@
+{
+  "name": "practice-progress",
+  "version": "0.1.0",
+  "description": "Digital assistant to fasttrack your music practice",
+  "main": "src/index.ts",
+  "author": "Peter Suggate",
+  "license": "MIT",
+  "scripts": {
+    "build": "webpack --mode-production",
+    "build:watch": "webpack --watch --mode=development",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "serve": "vue-cli-service serve dist/build.js",
+    "install-assets": "xcopy /E /Y /I .\\node_modules\\music-analyzer-wasm-rs\\* .\\public\\music-analyzer-wasm-rs",
+    "update-deps": "yarn upgrade music-analyzer-wasm-rs"
+  },
+  "dependencies": {
+    "music-analyzer-wasm-rs": "file:../music-analyzer-wasm-rs/pkg",
+    "vue": "^2.6.11",
+    "vue-loader": "^15.9.1",
+    "vue-template-compiler": "^2.6.11"
+  },
+  "devDependencies": {
+    "@vue/cli-service": "^4.2.3",
+    "css-loader": "^3.4.2",
+    "ts-loader": "^6.2.2",
+    "typescript": "^3.8.3",
+    "webpack": "^4.42.1",
+    "webpack-cli": "^3.3.11"
+  }
+}
