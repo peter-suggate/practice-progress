@@ -1,3 +1,4 @@
+import "./worker-polyfills/text-encoder.js";
 import init, {
   cqt_octaves
 } from "./music-analyzer-wasm-rs/music_analyzer_wasm_rs.js";
