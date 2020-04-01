@@ -15,6 +15,7 @@
     "update-deps": "yarn upgrade music-analyzer-wasm-rs"
   },
   "dependencies": {
+    "fp-ts": "^2.5.3",
     "music-analyzer-wasm-rs": "file:../music-analyzer-wasm-rs/pkg",
     "vue": "^2.6.11",
     "vue-loader": "^15.9.1",
