@@ -8,7 +8,8 @@
   "scripts": {
     "build": "webpack --mode-production",
     "build:watch": "webpack --watch --mode=development",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest --config ./config/jest.config.js",
+    "test:watch": "jest --config ./config/jest.config.js --watch",
     "serve": "vue-cli-service serve dist/build.js",
     "install-assets": "xcopy /E /Y /I .\\node_modules\\music-analyzer-wasm-rs\\* .\\public\\music-analyzer-wasm-rs",
     "update-deps": "yarn upgrade music-analyzer-wasm-rs"
@@ -20,8 +21,11 @@
     "vue-template-compiler": "^2.6.11"
   },
   "devDependencies": {
+    "@types/jest": "^25.1.4",
     "@vue/cli-service": "^4.2.3",
     "css-loader": "^3.4.2",
+    "jest": "^25.2.4",
+    "ts-jest": "^25.3.0",
     "ts-loader": "^6.2.2",
     "typescript": "^3.8.3",
     "webpack": "^4.42.1",
