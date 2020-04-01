@@ -1,5 +1,7 @@
 import { AudioWorklet } from "./AudioWorklet";
 
+type AudioContextState = "closed" | "running" | "suspended";
+
 export default class AudioContext {
   audioWorklet = new AudioWorklet();
 
@@ -9,8 +11,14 @@ export default class AudioContext {
     return new MediaStreamSource();
   }
 
-  async suspend() {}
-  async resume() {}
+  state: AudioContextState = "closed";
+
+  async suspend() {
+    this.state = "suspended";
+  }
+  async resume() {
+    this.state = "running";
+  }
 }
 
 export class MediaStreamSource {

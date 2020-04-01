@@ -1,6 +1,6 @@
 import "./worker-polyfills/text-encoder.js";
 import init, {
-  cqt_octaves
+  AudioSamplesProcessor
 } from "./music-analyzer-wasm-rs/music_analyzer_wasm_rs.js";
 
 class AudioProcessor extends AudioWorkletProcessor {
@@ -11,11 +11,10 @@ class AudioProcessor extends AudioWorkletProcessor {
   }
 
   async loadWasm(wasmBytes) {
-    // const compiledModule = await WebAssembly.compile(wasmBytes);
-    // this.wasmInstance = await WebAssembly.instantiate(compiledModule, {});
-
     init(WebAssembly.compile(wasmBytes)).then(() => {
-      console.log(cqt_octaves());
+      console.log("wasm module compiled and ready to go");
+
+      this.wasmSamplesProcessor = AudioSamplesProcessor.new();
     });
   }
 
@@ -39,8 +38,24 @@ class AudioProcessor extends AudioWorkletProcessor {
 
       // output[channel].set(input[channel]);
       inputSamples.forEach((sample, index) => {
-        outputSamples[index] = identity(sample);
+        outputSamples[index] = sample;
       });
+
+      this.wasmSamplesProcessor.add_samples(outputSamples);
+
+      const analyzer = this.wasmSamplesProcessor.create_analyzer();
+
+      if (analyzer) {
+        console.log("analyzer.num_samples", analyzer.num_samples);
+        // const octaves = analyzer.cqt_octaves();
+
+        // this.port.postMessage({
+        //   type: "cqt",
+        //   result: octaves
+        // });
+
+        analyzer.free();
+      }
     }
 
     return true;

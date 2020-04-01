@@ -3,25 +3,22 @@ import Vue from "vue";
 export default Vue.extend({
   template: `
       <div>
-          <button @click="toggleRecording">{{actionText}}</button>
+          <button @click="toggleRecording" v-bind:disabled="isTransitioning">{{actionText}}</button>
       </div>
     `,
-  props: [],
-  data() {
-    return {
-      isRecording: false
-    };
-  },
+  props: { isRecording: Boolean, isTransitioning: Boolean },
   methods: {
     toggleRecording() {
-      this.isRecording = !this.isRecording;
-
-      this.$emit("recording-toggled", this.isRecording);
+      this.$emit("recording-toggled", !this.isRecording);
     }
   },
   computed: {
     actionText(): string {
-      return this.isRecording ? "Stop" : "Start";
+      return this.isTransitioning
+        ? "initializing"
+        : this.isRecording
+        ? "Stop"
+        : "Start";
     }
   }
 });
