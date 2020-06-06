@@ -5,9 +5,16 @@
   "main": "src/index.ts",
   "author": "Peter Suggate",
   "license": "MIT",
+  "keywords": [
+    "wasm",
+    "WebAssembly",
+    "Rust",
+    "Vue.js",
+    "music"
+  ],
   "scripts": {
     "build": "webpack --mode-production",
-    "build:watch": "webpack --watch --mode=development",
+    "build:watch": "webpack-dev-server --hot --mode=development",
     "test": "jest --config ./config/jest.config.js",
     "test:watch": "jest --config ./config/jest.config.js --watch",
     "serve": "vue-cli-service serve dist/build.js",
@@ -19,17 +26,20 @@
     "music-analyzer-wasm-rs": "file:../music-analyzer-wasm-rs/pkg",
     "vue": "^2.6.11",
     "vue-loader": "^15.9.1",
+    "vue-material": "^1.0.0-beta-14",
     "vue-template-compiler": "^2.6.11"
   },
   "devDependencies": {
     "@types/jest": "^25.1.4",
     "@vue/cli-service": "^4.2.3",
     "css-loader": "^3.4.2",
+    "eslint": "^7.2.0",
     "jest": "^25.2.4",
     "ts-jest": "^25.3.0",
     "ts-loader": "^6.2.2",
     "typescript": "^3.8.3",
     "webpack": "^4.42.1",
-    "webpack-cli": "^3.3.11"
+    "webpack-cli": "^3.3.11",
+    "webpack-dev-server": "^3.11.0"
   }
 }

@@ -1,7 +1,14 @@
 import Vue from "vue";
+// const VueMaterial = require("vue-material");
+import "vue-material/dist/vue-material.min.css";
+import "vue-material/dist/theme/default-dark.css";
+import { MdButton } from "vue-material/dist/components";
 import StartStop from "./components/StartStop";
 import RecorderStatus from "./components/RecorderStatus";
 import { PracticeProgressVM } from "./components/PracticeProgressVM";
+
+// Vue.use(VueMaterial);
+Vue.use(MdButton);
 
 let v = new Vue({
   el: "#app",
@@ -12,16 +19,16 @@ let v = new Vue({
     </div>
     `,
   data: {
-    vm: new PracticeProgressVM()
+    vm: new PracticeProgressVM(),
   },
   components: {
     StartStop,
-    RecorderStatus
+    RecorderStatus,
   },
   methods: {
     handleRecordingToggled(isRecording: boolean) {
       this.vm.toggleRecording();
-    }
+    },
   },
   computed: {
     isRecording(): boolean {
@@ -32,6 +39,6 @@ let v = new Vue({
         this.vm.recorderState === "starting" ||
         this.vm.recorderState === "stopping"
       );
-    }
-  }
+    },
+  },
 });
