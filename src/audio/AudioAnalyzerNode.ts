@@ -1,12 +1,19 @@
 import { Either, left, right } from "fp-ts/lib/Either";
+import { taskFromAsync } from "../fp-util";
+import { TaskEither } from "fp-ts/lib/TaskEither";
 
-type AudioAnalyzerEventTypes = {
-  type: "cqt";
-  result: Uint16Array;
-};
+type AudioAnalyzerEventTypes =
+  | {
+      type: "cqt";
+      result: Uint16Array;
+    }
+  | {
+      type: "pitches";
+      result: any;
+    };
 
 function scriptUrl(scriptPath: string) {
-  const publicUrl = "http://localhost:8080";
+  const publicUrl = "http://localhost:8080/public";
 
   return `${publicUrl}/${scriptPath}`;
 }
@@ -20,32 +27,33 @@ export class AudioAnalyzerNode {
       "audio-processor"
     );
 
-    this.audioWorkletNode.port.onmessage = event => this.onmessage(event.data);
+    this.audioWorkletNode.port.onmessage = (event) =>
+      this.onmessage(event.data);
 
     this.audioWorkletNode.port.postMessage({
       type: "load-wasm-module",
-      wasmBytes
+      wasmBytes,
     });
+
+    this.audioWorkletNode.onprocessorerror = (e) => {
+      console.log(
+        `An error from AudioWorkletProcessor.process() occurred: ${e}`
+      );
+    };
   }
 
-  static async create(
-    context: AudioContext
-  ): Promise<Either<Error, AudioAnalyzerNode>> {
+  static create(context: AudioContext): TaskEither<Error, AudioAnalyzerNode> {
     // Fetch the Wasm module as raw bytes and pass to the worklet.
-    try {
+    return taskFromAsync(async () => {
+      await context.suspend();
+
       // Add our audio processor worklet to the context.
       await context.audioWorklet.addModule(AudioAnalyzerNode.processorUrl);
 
       const wasmBytes = await AudioAnalyzerNode.fetchMusicAnalyzerWasm();
 
-      const node = new AudioAnalyzerNode(context, wasmBytes);
-
-      return right(node);
-    } catch (error) {
-      console.error(error);
-
-      return left(error);
-    }
+      return new AudioAnalyzerNode(context, wasmBytes);
+    });
   }
 
   static get processorUrl(): string {
@@ -63,6 +71,13 @@ export class AudioAnalyzerNode {
     switch (eventData.type) {
       case "cqt": {
         console.log("cqt arrived", eventData.result);
+        break;
+      }
+      case "pitches": {
+        console.log(
+          `latest pitches (Hz) amount: ${eventData.result.length}, first: `,
+          eventData.result[0]
+        );
         break;
       }
       default:
