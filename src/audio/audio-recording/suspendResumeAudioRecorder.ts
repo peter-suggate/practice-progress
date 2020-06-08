@@ -16,14 +16,14 @@ export async function resumeAudioRecorder(
 
   return {
     context,
-    status: "running"
+    type: "running",
   };
 }
 
 export const resumeAudioRecorderTask = (recorder: StoppedAudioRecorder) =>
   TE.tryCatch(
     () => resumeAudioRecorder(recorder),
-    e => e
+    (e) => e
   );
 
 export async function suspendAudioRecorder(
@@ -41,12 +41,12 @@ export async function suspendAudioRecorder(
 
   return {
     context,
-    status: "stopped"
+    type: "stopped",
   };
 }
 
 export const suspendAudioRecorderTask = (recorder: StartedAudioRecorder) =>
   TE.tryCatch(
     () => suspendAudioRecorder(recorder),
-    e => e
+    (e) => e
   );

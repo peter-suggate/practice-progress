@@ -1,71 +1,125 @@
-import { map } from "fp-ts/lib/Either";
-import {
-  StoppedAudioRecorder,
-  TransitioningAudioRecorder
-} from "./AudioRecorder";
+import { AudioRecorder, StoppedAudioRecorder } from "./AudioRecorder";
 import { AudioAnalyzerNode } from "../AudioAnalyzerNode";
 import { pipe } from "fp-ts/lib/pipeable";
-import * as TE from "fp-ts/lib/TaskEither";
+import {
+  taskRight,
+  taskFromAsync,
+  chainTask,
+  tapTask,
+  mapTask,
+} from "../../fp-util";
 
 const getWebAudioMediaStream = async () =>
   globalThis.navigator.mediaDevices.getUserMedia({
     audio: true,
-    video: false
+    video: false,
   });
 
-export async function createAudioRecorder(
-  getAudioMediaStream: () => Promise<MediaStream>
-): Promise<StoppedAudioRecorder> {
-  const context = new globalThis.AudioContext();
+const createContextSuspended = (
+  context: AudioContext,
+  analyzerNode: AudioAnalyzerNode,
+  mediaStream: MediaStream
+): StoppedAudioRecorder & { context: AudioContext } => {
+  const audioSource = context.createMediaStreamSource(mediaStream);
 
-  try {
-    const stream = await getAudioMediaStream();
-
-    const audioSource = context.createMediaStreamSource(stream);
-
-    const connectToAudioSource = (node: AudioAnalyzerNode) => {
-      audioSource.connect(node.audioWorkletNode);
-      return node;
-    };
-
-    const connectToDestination = (node: AudioAnalyzerNode) => {
-      node.audioWorkletNode.connect(context.destination);
-      return node;
-    };
-
-    const analyzerNode = await AudioAnalyzerNode.create(context);
-
-    await context.suspend();
-
-    pipe(analyzerNode, map(connectToAudioSource), map(connectToDestination));
-
-    return {
-      context,
-      status: "stopped"
-    };
-  } catch (e) {
-    throw e;
-  }
-}
-
-export const createAudioRecorderTask = (
-  getAudioMediaStream: () => Promise<MediaStream> = getWebAudioMediaStream
-) =>
-  TE.tryCatch(
-    () => createAudioRecorder(getAudioMediaStream),
-    e => e
-  );
-
-export async function beginCreateAudioRecorder(): Promise<
-  TransitioningAudioRecorder
-> {
-  return {
-    status: "starting"
+  const connectToAudioSource = (node: AudioAnalyzerNode) => {
+    audioSource.connect(node.audioWorkletNode);
+    return node;
   };
-}
 
-export const beginCreateAudioRecorderTask = () =>
-  TE.tryCatch(
-    () => beginCreateAudioRecorder(),
-    e => e
+  const connectToDestination = (node: AudioAnalyzerNode) => {
+    node.audioWorkletNode.connect(context.destination);
+    return node;
+  };
+
+  return pipe(analyzerNode, connectToAudioSource, connectToDestination, () => ({
+    type: "stopped",
+    context,
+  }));
+};
+
+type Options = {
+  getAudioMediaStream: () => Promise<MediaStream>;
+  onStatusChange: (state: AudioRecorder) => void;
+};
+
+export const createAudioRecorderTask = (optionsIn: Partial<Options>) => {
+  const options = {
+    getAudioMediaStream: getWebAudioMediaStream,
+    onStatusChange: () => {},
+    ...optionsIn,
+  };
+
+  return pipe(
+    taskRight<Error, AudioRecorder>({
+      type: "starting",
+      message: "Connecting to media",
+    }),
+    tapTask(options.onStatusChange),
+
+    chainTask(() => taskFromAsync(options.getAudioMediaStream)),
+    mapTask((stream) => ({ stream })),
+
+    mapTask(({ ...rest }) => ({
+      context: new globalThis.AudioContext(),
+      ...rest,
+    })),
+
+    tapTask(() =>
+      options.onStatusChange({
+        type: "starting",
+        message: "Fetching and compiling analysis modules",
+      })
+    ),
+
+    chainTask(({ context, ...rest }) =>
+      pipe(
+        AudioAnalyzerNode.create(context),
+        mapTask((node) => ({
+          node,
+          context,
+          ...rest,
+        }))
+      )
+    ),
+
+    mapTask(({ context, node, stream }) =>
+      createContextSuspended(context, node, stream)
+    ),
+
+    tapTask(
+      ({ context }) =>
+        options.onStatusChange({
+          type: "running",
+          context,
+        }),
+      (error) =>
+        options.onStatusChange({
+          type: "error",
+          message: error.message,
+        })
+    )
+
+    // mapTaskFromAsyncWith(options.getAudioMediaStream, (stream) => ({ stream })),
+    // mapTask((stream) => ({ stream })),
+
+    // mapTaskWith(
+    //   () => new globalThis.AudioContext(),
+    //   (context) => ({ context })
+    // ),
+
+    // mapTask(({ ...rest }) => ({
+    //   context: new globalThis.AudioContext(),
+    //   ...rest,
+    // }))
+
+    // mapTaskFromAsyncWith(({ context }) => await createAnalyzerNode(context), (node) => ({ node }))
+    // chainTask(({ context, ...rest }) =>
+    //   taskFromAsync(async () => ({
+    //     ...rest,
+    //     node: await createAnalyzerNode(context),
+    //   }))
+    // )
+    // chainTask(({ context, node }) => taskFromAsync(() => createContextSuspended(stream)))
   );
+};

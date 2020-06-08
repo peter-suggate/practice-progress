@@ -2,7 +2,7 @@ import Vue from "vue";
 
 export default Vue.extend({
   template: `
-      <div>
+      <div class="md-body-2">
           <span>{{recorderState}}</span>
       </div>
     `,
@@ -10,6 +10,6 @@ export default Vue.extend({
   methods: {
     toggleRecording() {
       this.$emit("recording-toggled", !this.recorderState);
-    }
-  }
+    },
+  },
 });

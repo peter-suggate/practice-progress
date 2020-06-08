@@ -1,38 +1,26 @@
 import { Option, fold } from "fp-ts/lib/Option";
 
-export type AudioRecorderState =
-  | "starting"
-  | "stopping"
-  | "stopped"
-  | "running"
-  | "uninitialized";
-
-export type TransitioningAudioRecorder = {
-  status: "starting" | "stopping";
-};
-
-export type StoppedAudioRecorder = {
-  context: AudioContext;
-  status: "stopped";
-};
-
-export type StartedAudioRecorder = {
-  context: AudioContext;
-  status: "running";
-};
+export type StoppedAudioRecorder = { type: "stopped"; context: AudioContext };
+export type StartedAudioRecorder = { type: "running"; context: AudioContext };
 
 export type AudioRecorder =
+  | {
+      type: "starting";
+      message:
+        | "Connecting to media"
+        | "Fetching and compiling analysis modules";
+    }
+  | { type: "stopping" }
   | StoppedAudioRecorder
   | StartedAudioRecorder
-  | TransitioningAudioRecorder;
+  | { type: "uninitialized" }
+  | { type: "error"; message: string };
 
 export type MaybeAudioRecorder = Option<AudioRecorder>;
 
-export function audioRecorderState(
-  recorder: MaybeAudioRecorder
-): AudioRecorderState {
-  return fold<AudioRecorder, AudioRecorderState>(
+export function audioRecorderStatus(recorder: MaybeAudioRecorder): string {
+  return fold<AudioRecorder, string>(
     () => "uninitialized",
-    recorder => recorder.status
+    (recorder) => recorder.type
   )(recorder);
 }

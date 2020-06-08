@@ -1,43 +1,44 @@
-import { audioRecorderState } from "../AudioRecorder";
+import { audioRecorderStatus } from "../AudioRecorder";
 import { none, some } from "fp-ts/lib/Option";
 import { emptyImpl } from "../../../partial-impl";
 
 describe("getting state of current audio recorder", () => {
   it("returns 'uninitialized' when audio recorder is empty", () => {
-    expect(audioRecorderState(none)).toBe("uninitialized");
+    expect(audioRecorderStatus(none)).toBe("uninitialized");
   });
 
   it("returns current state of audio recorder when there is one", () => {
     expect(
-      audioRecorderState(
+      audioRecorderStatus(
         some({
-          status: "starting"
+          type: "starting",
+          message: "Connecting to media",
         })
       )
     ).toBe("starting");
 
     expect(
-      audioRecorderState(
+      audioRecorderStatus(
         some({
-          status: "stopping"
+          type: "stopping",
         })
       )
     ).toBe("stopping");
 
     expect(
-      audioRecorderState(
+      audioRecorderStatus(
         some({
           context: emptyImpl<AudioContext>(),
-          status: "running"
+          type: "running",
         })
       )
     ).toBe("running");
 
     expect(
-      audioRecorderState(
+      audioRecorderStatus(
         some({
           context: emptyImpl<AudioContext>(),
-          status: "stopped"
+          type: "stopped",
         })
       )
     ).toBe("stopped");

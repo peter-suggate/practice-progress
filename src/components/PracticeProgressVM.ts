@@ -1,20 +1,15 @@
 import {
   MaybeAudioRecorder,
   AudioRecorder,
-  AudioRecorderState,
-  audioRecorderState
+  audioRecorderStatus,
 } from "../audio/audio-recording/AudioRecorder";
-import {
-  createAudioRecorderTask,
-  beginCreateAudioRecorderTask
-} from "../audio/audio-recording/createAudioRecorder";
+import { createAudioRecorderTask } from "../audio/audio-recording/createAudioRecorder";
 import { none, some, fold } from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as T from "fp-ts/lib/Task";
 import {
   resumeAudioRecorderTask,
-  suspendAudioRecorder,
-  suspendAudioRecorderTask
+  suspendAudioRecorderTask,
 } from "../audio/audio-recording/suspendResumeAudioRecorder";
 import { pipe } from "fp-ts/lib/pipeable";
 
@@ -23,7 +18,7 @@ export class PracticeProgressVM {
 
   // Records the transitioning state so that the UI updates
   private updateRecorder<RecorderState extends AudioRecorder>() {
-    return TE.map<RecorderState, RecorderState>(recorder => {
+    return TE.map<RecorderState, RecorderState>((recorder) => {
       this.recorder = some(recorder);
       return recorder;
     });
@@ -31,23 +26,20 @@ export class PracticeProgressVM {
 
   async createRecorderAndStart() {
     const createAudioRecorder = pipe(
-      // Transition to starting the audio recording machinery
-      beginCreateAudioRecorderTask(),
-      // Record the transitioning state so that the UI updates
-      this.updateRecorder(),
-      // Setup audio recording
-      TE.chain(() => createAudioRecorderTask()),
-      // Record the fully setup state so that the UI updates
-      this.updateRecorder(),
+      createAudioRecorderTask({
+        onStatusChange: (status: AudioRecorder) => {
+          this.recorder = some(status);
+        },
+      }),
       TE.fold(
-        e => {
+        (e) => {
           console.trace(e);
 
           this.recorder = none;
 
           return T.of(undefined);
         },
-        recorder => {
+        (recorder) => {
           this.recorder = some(recorder);
 
           return T.of(recorder);
@@ -61,14 +53,14 @@ export class PracticeProgressVM {
       await pipe(
         resumeAudioRecorderTask(recorder),
         TE.fold(
-          e => {
+          (e) => {
             console.trace(e);
 
             this.recorder = none;
 
             return T.of(undefined);
           },
-          recorder => {
+          (recorder) => {
             this.recorder = some(recorder);
 
             return T.of(undefined);
@@ -78,20 +70,17 @@ export class PracticeProgressVM {
     }
   }
 
-  get recorderState(): AudioRecorderState {
-    return audioRecorderState(this.recorder);
+  get recorderState(): string {
+    return audioRecorderStatus(this.recorder);
   }
 
   async toggleRecording() {
-    // await pipe(
-
-    // )(this.recorder);
     fold<AudioRecorder, void>(
       () => {
         this.createRecorderAndStart();
       },
-      async recorder => {
-        switch (recorder.status) {
+      async (recorder) => {
+        switch (recorder.type) {
           case "running":
             await pipe(
               suspendAudioRecorderTask(recorder),
