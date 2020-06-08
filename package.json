@@ -13,7 +13,7 @@
     "music"
   ],
   "scripts": {
-    "build": "webpack --mode-production",
+    "build": "webpack --mode=production",
     "build:watch": "webpack-dev-server --hot --mode=development",
     "test": "jest --config ./config/jest.config.js",
     "test:watch": "jest --config ./config/jest.config.js --watch",
