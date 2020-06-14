@@ -1,7 +1,5 @@
 import { PracticeProgressVM } from "../PracticeProgressVM";
-import { isNone, isSome, getOrElse } from "fp-ts/lib/Option";
-import { AudioRecorder } from "../../audio/audio-recording/AudioRecorder";
-import { requireSome } from "../../testing/fp-testing";
+import { isNone, isSome } from "fp-ts/lib/Option";
 
 it("initially has empty audio recorder", () => {
   const vm = new PracticeProgressVM();

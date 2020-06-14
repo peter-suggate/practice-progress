@@ -4,12 +4,13 @@ export default Vue.extend({
   template: `
       <div class="md-body-2">
           <span>{{recorderState}}</span>
+          <span>{{recorderStateDetails}}</span>
       </div>
     `,
-  props: { recorderState: String },
+  props: { recorderState: String, recorderStateDetails: String },
   methods: {
     toggleRecording() {
-      this.$emit("recording-toggled", !this.recorderState);
+      this.$emit("recording-toggled");
     },
   },
 });

@@ -1,5 +1,5 @@
-import { createAudioRecorderTask } from "../createAudioRecorder";
-import { requireLeft, requireRight } from "../../../testing/fp-testing";
+import { requireLeft, requireRight } from "../../../../testing/fp-testing";
+import { createAudioRecorderTask } from "../audioRecorderSetup";
 
 it("returns error if microphone is not available", async () => {
   const recorder = await createAudioRecorderTask({

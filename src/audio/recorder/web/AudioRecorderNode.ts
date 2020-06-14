@@ -1,16 +1,10 @@
-import { Either, left, right } from "fp-ts/lib/Either";
-import { taskFromAsync } from "../fp-util";
+import { Subject } from "rxjs";
 import { TaskEither } from "fp-ts/lib/TaskEither";
-
-type AudioAnalyzerEventTypes =
-  | {
-      type: "cqt";
-      result: Uint16Array;
-    }
-  | {
-      type: "pitches";
-      result: any;
-    };
+import { taskFromAsync } from "../../../fp-util";
+import {
+  AudioRecorderEventTypes,
+  AudioProcessorEventTypes,
+} from "../recorder-types";
 
 function scriptUrl(scriptPath: string) {
   const publicUrl = "http://localhost:8080/public";
@@ -18,10 +12,12 @@ function scriptUrl(scriptPath: string) {
   return `${publicUrl}/${scriptPath}`;
 }
 
-export class AudioAnalyzerNode {
+export class AudioAnalyzerNode extends Subject<AudioRecorderEventTypes> {
   audioWorkletNode: AudioWorkletNode;
 
   private constructor(context: AudioContext, wasmBytes: ArrayBuffer) {
+    super();
+
     this.audioWorkletNode = new globalThis.AudioWorkletNode(
       context,
       "audio-processor"
@@ -67,17 +63,29 @@ export class AudioAnalyzerNode {
     return res.arrayBuffer();
   }
 
-  onmessage(eventData: AudioAnalyzerEventTypes) {
+  onmessage(eventData: AudioProcessorEventTypes) {
     switch (eventData.type) {
-      case "cqt": {
-        console.log("cqt arrived", eventData.result);
-        break;
-      }
       case "pitches": {
-        console.log(
-          `latest pitches (Hz) amount: ${eventData.result.length}, first: `,
-          eventData.result[0]
-        );
+        eventData.result.forEach((pitch) => {
+          if (pitch.is_onset) {
+            this.next({
+              type: "onset",
+              t: pitch.t,
+            });
+          }
+
+          this.next({
+            type: "pitch",
+            pitch,
+          });
+        });
+
+        // console.log(
+        //   `latest pitches (Hz) amount: ${eventData.result.length}, first: `,
+        //   eventData.result.map(
+        //     (e) => `is_onset: ${e.is_onset}, frequency: ${e.frequency}`
+        //   )
+        // );
         break;
       }
       default:

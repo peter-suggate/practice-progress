@@ -19,7 +19,8 @@ class AudioProcessor extends AudioWorkletProcessor {
       this.wasmSamplesProcessor = AudioSamplesProcessor.new();
 
       this.pitchDetector = this.wasmSamplesProcessor.create_pitch_detector(
-        "McLeod"
+        "McLeod",
+        1024
       );
     });
   }
@@ -38,8 +39,8 @@ class AudioProcessor extends AudioWorkletProcessor {
     const input = inputs[0];
     const output = outputs[0];
 
-    const updatesPerSecond = 44100 / 128;
-    const desiredUpdatesPerSecond = 10;
+    const updatesPerSecond = 48000 / 128;
+    const desiredUpdatesPerSecond = updatesPerSecond;
     const iterationsPerUpdate = Math.ceil(
       updatesPerSecond / desiredUpdatesPerSecond
     );
@@ -57,42 +58,37 @@ class AudioProcessor extends AudioWorkletProcessor {
 
       if (
         this.pitchDetector &&
-        this.wasmSamplesProcessor.has_sufficient_samples() &&
-        this.iteration % iterationsPerUpdate === 0
+        ++this.iteration % iterationsPerUpdate === 0 &&
+        this.wasmSamplesProcessor.has_sufficient_samples()
       ) {
         try {
           this.wasmSamplesProcessor.set_latest_samples_on(this.pitchDetector);
 
-          const pitches = this.pitchDetector.pitches();
+          const result = this.pitchDetector.pitches();
 
-          if (pitches.length > 0) {
-            this.port.postMessage({
-              type: "pitches",
-              result: pitches.map((p) => ({
-                hz: p.frequency,
-                clarity: p.clarity,
-                t: p.t,
-              })),
-            });
+          if (result.code !== "success") {
+            console.log("error getting pitches");
+          } else {
+            const pitches = result.pitches;
+            if (pitches.length > 0) {
+              this.port.postMessage({
+                type: "pitches",
+                result: pitches.map((p) => ({
+                  frequency: p.frequency,
+                  clarity: p.clarity,
+                  t: p.t,
+                  is_onset: p.is_onset,
+                })),
+              });
 
-            pitches.forEach((p) => p.free());
+              pitches.forEach((p) => p.free());
+            }
           }
         } catch (e) {
           console.error(e);
         }
-        // if (this.iteration % 16 === 0) {
-        //   const octaves = analyzer.cqt_octaves();
-        // }
-        // this.port.postMessage({
-        //   type: "cqt",
-        //   result: octaves
-        // });
-
-        // analyzer.free();
       }
     }
-
-    this.iteration++;
 
     return true;
   }

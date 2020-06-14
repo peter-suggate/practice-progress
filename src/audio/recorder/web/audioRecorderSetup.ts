@@ -1,13 +1,19 @@
-import { AudioRecorder, StoppedAudioRecorder } from "./AudioRecorder";
-import { AudioAnalyzerNode } from "../AudioAnalyzerNode";
-import { pipe } from "fp-ts/lib/pipeable";
+import { AudioAnalyzerNode } from "./AudioRecorderNode";
 import {
+  StoppedAudioRecorder,
+  AudioRecorder,
+  StartedAudioRecorder,
+  AudioRecorderSetup,
+  CreateAudioRecorderOptions,
+} from "../AudioRecorder";
+import {
+  pipe,
   taskRight,
+  tapTask,
   taskFromAsync,
   chainTask,
-  tapTask,
   mapTask,
-} from "../../fp-util";
+} from "../../../fp-util";
 
 const getWebAudioMediaStream = async () =>
   globalThis.navigator.mediaDevices.getUserMedia({
@@ -15,11 +21,11 @@ const getWebAudioMediaStream = async () =>
     video: false,
   });
 
-const createContextSuspended = (
+const createAnalyzer = (
   context: AudioContext,
   analyzerNode: AudioAnalyzerNode,
   mediaStream: MediaStream
-): StoppedAudioRecorder & { context: AudioContext } => {
+): StoppedAudioRecorder => {
   const audioSource = context.createMediaStreamSource(mediaStream);
 
   const connectToAudioSource = (node: AudioAnalyzerNode) => {
@@ -34,13 +40,13 @@ const createContextSuspended = (
 
   return pipe(analyzerNode, connectToAudioSource, connectToDestination, () => ({
     type: "stopped",
+    analyzer$: analyzerNode,
     context,
   }));
 };
 
-type Options = {
+type Options = CreateAudioRecorderOptions & {
   getAudioMediaStream: () => Promise<MediaStream>;
-  onStatusChange: (state: AudioRecorder) => void;
 };
 
 export const createAudioRecorderTask = (optionsIn: Partial<Options>) => {
@@ -84,14 +90,15 @@ export const createAudioRecorderTask = (optionsIn: Partial<Options>) => {
     ),
 
     mapTask(({ context, node, stream }) =>
-      createContextSuspended(context, node, stream)
+      createAnalyzer(context, node, stream)
     ),
 
     tapTask(
-      ({ context }) =>
+      ({ analyzer$, context }) =>
         options.onStatusChange({
           type: "running",
           context,
+          analyzer$,
         }),
       (error) =>
         options.onStatusChange({
@@ -99,27 +106,57 @@ export const createAudioRecorderTask = (optionsIn: Partial<Options>) => {
           message: error.message,
         })
     )
-
-    // mapTaskFromAsyncWith(options.getAudioMediaStream, (stream) => ({ stream })),
-    // mapTask((stream) => ({ stream })),
-
-    // mapTaskWith(
-    //   () => new globalThis.AudioContext(),
-    //   (context) => ({ context })
-    // ),
-
-    // mapTask(({ ...rest }) => ({
-    //   context: new globalThis.AudioContext(),
-    //   ...rest,
-    // }))
-
-    // mapTaskFromAsyncWith(({ context }) => await createAnalyzerNode(context), (node) => ({ node }))
-    // chainTask(({ context, ...rest }) =>
-    //   taskFromAsync(async () => ({
-    //     ...rest,
-    //     node: await createAnalyzerNode(context),
-    //   }))
-    // )
-    // chainTask(({ context, node }) => taskFromAsync(() => createContextSuspended(stream)))
   );
+};
+
+async function resumeAudioRecorder(
+  recorder: StoppedAudioRecorder
+): Promise<StartedAudioRecorder> {
+  const { context, analyzer$ } = recorder;
+
+  if (context.state !== "suspended") {
+    throw Error(
+      `Cannot resume audio recording unless the audio context is suspended. Current state is ${context.state}`
+    );
+  }
+
+  await context.resume();
+
+  return {
+    context,
+    analyzer$,
+    type: "running",
+  };
+}
+
+const resumeAudioRecorderTask = (recorder: StoppedAudioRecorder) =>
+  taskFromAsync(() => resumeAudioRecorder(recorder));
+
+async function suspendAudioRecorder(
+  recorder: StartedAudioRecorder
+): Promise<StoppedAudioRecorder> {
+  const { context, analyzer$ } = recorder;
+
+  if (context.state !== "running") {
+    throw Error(
+      `Cannot stop audio recording unless the audio context is currently running. Current state is ${context.state}`
+    );
+  }
+
+  await context.suspend();
+
+  return {
+    context,
+    analyzer$,
+    type: "stopped",
+  };
+}
+
+const suspendAudioRecorderTask = (recorder: StartedAudioRecorder) =>
+  taskFromAsync(() => suspendAudioRecorder(recorder));
+
+export const webAudioRecorderSetup: AudioRecorderSetup = {
+  create: createAudioRecorderTask,
+  suspend: suspendAudioRecorderTask,
+  resume: resumeAudioRecorderTask,
 };

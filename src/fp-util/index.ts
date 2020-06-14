@@ -56,4 +56,4 @@ export const taskFromAsync = <T>(asyncFn: () => Promise<T>) =>
 //     )
 //   );
 
-export { taskfromEither, mapTask, chainTask, taskRight, right, left };
+export { pipe, taskfromEither, mapTask, chainTask, taskRight, right, left };

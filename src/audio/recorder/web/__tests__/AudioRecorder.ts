@@ -1,6 +1,8 @@
 import { audioRecorderStatus } from "../AudioRecorder";
 import { none, some } from "fp-ts/lib/Option";
 import { emptyImpl } from "../../../partial-impl";
+import { Observable } from "rxjs";
+import { AudioRecorderEventTypes } from "../recorder-types";
 
 describe("getting state of current audio recorder", () => {
   it("returns 'uninitialized' when audio recorder is empty", () => {
@@ -29,6 +31,7 @@ describe("getting state of current audio recorder", () => {
       audioRecorderStatus(
         some({
           context: emptyImpl<AudioContext>(),
+          analyzer$: emptyImpl<Observable<AudioRecorderEventTypes>>(),
           type: "running",
         })
       )
@@ -38,6 +41,7 @@ describe("getting state of current audio recorder", () => {
       audioRecorderStatus(
         some({
           context: emptyImpl<AudioContext>(),
+          analyzer$: emptyImpl<Observable<AudioRecorderEventTypes>>(),
           type: "stopped",
         })
       )

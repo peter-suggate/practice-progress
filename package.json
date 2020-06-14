@@ -24,9 +24,11 @@
   "dependencies": {
     "fp-ts": "^2.5.3",
     "music-analyzer-wasm-rs": "file:../music-analyzer-wasm-rs/pkg",
+    "rxjs": "^6.5.5",
     "vue": "^2.6.11",
     "vue-loader": "^15.9.1",
     "vue-material": "^1.0.0-beta-14",
+    "vue-rx": "^6.2.0",
     "vue-template-compiler": "^2.6.11"
   },
   "devDependencies": {

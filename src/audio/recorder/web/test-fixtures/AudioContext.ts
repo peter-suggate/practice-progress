@@ -2,7 +2,7 @@ import { AudioWorklet } from "./AudioWorklet";
 
 type AudioContextState = "closed" | "running" | "suspended";
 
-export default class AudioContext {
+export default class TestAudioContext {
   audioWorklet = new AudioWorklet();
 
   constructor() {}
@@ -25,4 +25,4 @@ export class MediaStreamSource {
   connect() {}
 }
 
-(globalThis as any).AudioContext = AudioContext;
+(globalThis as any).AudioContext = TestAudioContext;
